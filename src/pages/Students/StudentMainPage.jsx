@@ -50,7 +50,7 @@ const StudentMainPage = ({ setPage }) => {
                             : "bg-blue-700 hover:bg-blue-600"
                             }`}
                     >
-                        New Student Registration
+                        Get All Students Info
                     </button>
                 </div>
             </div>

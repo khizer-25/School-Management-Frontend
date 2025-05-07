@@ -1,301 +1,307 @@
 import React, { useState } from 'react';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 
-const StudentRegistrationForm = () => {
-  const [photoPreview, setPhotoPreview] = useState(null);
+const DisplayStudentInfo = () => {
+  const [searchType, setSearchType] = useState('admissionNo');
+  const [query, setQuery] = useState('');
+  const [students, setStudents] = useState([]);
+  const [showTable, setShowTable] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [previewFile, setPreviewFile] = useState(null);
+  const [previewType, setPreviewType] = useState('image'); // or 'pdf'
 
-  const formik = useFormik({
-    initialValues: {
-      firstName: '', middleName: '', lastName: '',
-      dob: '', gender: '', bloodGroup: '',
-      grade: '', section: '', academicYear: '', rollNumber: '', admissionNumber: '',
-      parentName: '', relationship: '', phone: '', email: '', address: '',
-      studentPhoto: null, birthCertificate: null, previousMarksheet: null, transferCertificate: null,
-    },
-    validationSchema: Yup.object({
-      firstName: Yup.string().required('First name is required'),
-      lastName: Yup.string().required('Last name is required'),
-      dob: Yup.string().required('Date of Birth is required'),
-      gender: Yup.string().required('Gender is required'),
-      bloodGroup: Yup.string().required('Blood Group is required'),
-      grade: Yup.string().required('Grade is required'),
-      section: Yup.string().required('Section is required'),
-      academicYear: Yup.string().required('Academic Year is required'),
-      rollNumber: Yup.string().required('Roll Number is required'),
-      admissionNumber: Yup.string().required('Admission Number is required'),
-      parentName: Yup.string().required('Parent/Guardian name is required'),
-      relationship: Yup.string().required('Relationship is required'),
-      phone: Yup.string().required('Phone number is required'),
-      email: Yup.string().email('Invalid email address').required('Email is required'),
-      address: Yup.string().required('Address is required'),
-    }),
-    onSubmit: async (values) => {
-      const formData = new FormData();
+  const handleSearch = async () => {
+    try {
+      const params =
+        searchType === 'admissionNo'
+          ? { admissionNumber: query }
+          : { studentName: query };
 
-      // Append form fields
-      formData.append('firstName', values.firstName);
-      formData.append('middleName', values.middleName);
-      formData.append('lastName', values.lastName);
-      formData.append('dateOfBirth', values.dob);
-      formData.append('gender', values.gender);
-      formData.append('bloodGroup', values.bloodGroup);
-      formData.append('grade', values.grade);
-      formData.append('section', values.section);
-      formData.append('academicYear', values.academicYear);
-      formData.append('admissionNumber', values.admissionNumber);
-      formData.append('rollNumber', values.rollNumber);
-      formData.append('parentName', values.parentName);
-      formData.append('relationship', values.relationship);
-      formData.append('phoneNumber', values.phone);
-      formData.append('emailAddress', values.email);
-      formData.append('address', values.address);
+      const response = await axios.get(
+        'http://localhost:5000/api/Newregistration/findStudents',
+        { params }
+      );
 
-      // Append files
-      if (values.studentPhoto) formData.append('studentPhoto', values.studentPhoto);
-      if (values.birthCertificate) formData.append('birthCertificate', values.birthCertificate);
-      if (values.previousMarksheet) formData.append('previousMarksheet', values.previousMarksheet);
-      if (values.transferCertificate) formData.append('transferCertificate', values.transferCertificate);
-
-      try {
-        const response = await axios.post('http://localhost:5000/api/Newregistration/register', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-        console.log(response.data);
-        alert('Student Registered Successfully!');
-
-        // Reset form
-        formik.resetForm();
-        setTimeout(() => {
-          formik.setFieldValue('studentPhoto', null);
-          formik.setFieldValue('birthCertificate', null);
-          formik.setFieldValue('previousMarksheet', null);
-          formik.setFieldValue('transferCertificate', null);
-        }, 0);
-        setPhotoPreview(null);
-      } catch (error) {
-        console.error(error);
-        alert('Failed to register student!');
+      if (response.data.students.length === 0) {
+        setNotFound(true);
+        setStudents([]);
+        setShowTable(false);
+      } else {
+        setStudents(response.data.students);
+        setNotFound(false);
+        setShowTable(true);
       }
-    },
-  });
-
-  const inputClass = "border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-400";
-
-  const handleEnterKey = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const form = e.target.form;
-      const index = Array.prototype.indexOf.call(form, e.target);
-      form.elements[index + 1]?.focus();
+    } catch (error) {
+      console.error('Error occurred while searching', error);
+      setNotFound(true);
+      setStudents([]);
+      setShowTable(false);
     }
   };
 
+  const handleGetAll = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/newRegistration/getstudents');
+      console.log('Response Data:', response.data); // Log to check the structure
+
+      // Ensure we access the students array correctly
+      setStudents(response.data.students || []); // Default to an empty array if students key is missing
+      setShowTable(true);
+      setNotFound(false);
+    } catch (error) {
+      console.error('Fetching all students failed', error);
+      setStudents([]);
+      setShowTable(false);
+    }
+  };
+
+  const handleSearchTypeChange = (type) => {
+    setSearchType(type);
+    setQuery('');
+    setStudents([]);
+    setShowTable(false);
+    setNotFound(false);
+  };
+  const fetchImageAsBase64 = async (imageUrl) => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const reader = new FileReader();
+      return new Promise((resolve, reject) => {
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error fetching image as base64', error);
+      return null;
+    }
+  };
+
+  const formatDate = (isoDate) => {
+    if (!isoDate) return 'N/A';
+    const date = new Date(isoDate);
+    return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString('en-IN');
+  };
+
+  const renderDocument = (filename) => {
+    if (!filename) return 'N/A';
+
+    const fileUrl = `http://localhost:5000/uploads/${filename}`;
+    const isPDF = filename.toLowerCase().endsWith('.pdf');
+
+    return isPDF ? (
+      <img
+        src="/pdf-icon.png" // Use a local PDF icon or any public one
+        alt="PDF Document"
+        className="w-10 h-10 object-contain cursor-pointer hover:scale-105"
+        onClick={() => {
+          setPreviewFile(fileUrl);
+          setPreviewType('pdf');
+        }}
+      />
+    ) : (
+      <img
+        src={fileUrl}
+        alt="Document"
+        className="w-14 h-14 object-cover rounded cursor-pointer hover:scale-105"
+        onClick={() => {
+          setPreviewFile(fileUrl);
+          setPreviewType('image');
+        }}
+      />
+    );
+  };
+
+  const renderPhoto = (filename) =>
+    filename ? (
+      <img
+        src={`http://localhost:5000/uploads/${filename}`}
+        alt="student"
+        className="w-14 h-14 object-cover rounded cursor-pointer hover:scale-105 transition-transform"
+        onClick={() =>
+          setPreviewImage(`http://localhost:5000/uploads/${filename}`)
+        }
+      />
+    ) : (
+      'N/A'
+    );
+
+    const downloadExcel = () => {
+      const formattedData = students.map(student => ({
+        Name: [student.firstName, student.middleName, student.lastName].filter(Boolean).join(' '),
+        DOB: formatDate(student.dateOfBirth),
+        Gender: student.gender || 'N/A',
+        BloodGroup: student.bloodGroup || 'N/A',
+        Class: student.grade || 'N/A',
+        Section: student.section || 'N/A',
+        AcademicYear: student.academicYear || 'N/A',
+        AdmissionNo: student.admissionNumber || 'N/A',
+        RollNo: student.rollNumber || 'N/A',
+        TotalFees: student.totalFees || 'N/A',
+        ParentName: student.parentName || 'N/A',
+        Relationship: student.relationship || 'N/A',
+        Phone: student.phoneNumber || 'N/A',
+        Email: student.emailAddress || 'N/A',
+        Address: student.address || 'N/A',
+        BirthCertificate: student.birthCertificate
+          ? `http://localhost:5000/uploads/${student.birthCertificate}`
+          : 'N/A',
+        PreviousMarksheet: student.previousMarksheet
+          ? `http://localhost:5000/uploads/${student.previousMarksheet}`
+          : 'N/A',
+        TransferCertificate: student.transferCertificate
+          ? `http://localhost:5000/uploads/${student.transferCertificate}`
+          : 'N/A',
+      }));
+    
+      const ws = XLSX.utils.json_to_sheet(formattedData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Students');
+      XLSX.writeFile(wb, 'students_data.xlsx');
+    };
+    
+  
   return (
-    <form onSubmit={formik.handleSubmit} className="bg-white p-6 rounded shadow max-w-6xl mx-auto space-y-6">
-      <h2 className="text-2xl text-blue-600 font-bold mb-4">Student Registration</h2>
-
-      {/* Personal Info */}
-      <div>
-        <h3 className="font-semibold mb-2">Personal Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <input type="text" placeholder="First name" {...formik.getFieldProps('firstName')} className={inputClass} onKeyDown={handleEnterKey} />
-            {formik.touched.firstName && formik.errors.firstName && (
-              <div className="text-red-500 text-sm">{formik.errors.firstName}</div>
-            )}
-          </div>
-
-          <div>
-            <input type="text" placeholder="Middle name" {...formik.getFieldProps('middleName')} className={inputClass} onKeyDown={handleEnterKey} />
-          </div>
-
-          <div>
-            <input type="text" placeholder="Last name" {...formik.getFieldProps('lastName')} className={inputClass} onKeyDown={handleEnterKey} />
-            {formik.touched.lastName && formik.errors.lastName && (
-              <div className="text-red-500 text-sm">{formik.errors.lastName}</div>
-            )}
-          </div>
-
-          <div>
-            <input type="date" {...formik.getFieldProps('dob')} className={inputClass} onKeyDown={handleEnterKey} />
-            {formik.touched.dob && formik.errors.dob && (
-              <div className="text-red-500 text-sm">{formik.errors.dob}</div>
-            )}
-          </div>
-
-          <div>
-            <select {...formik.getFieldProps('gender')} className={inputClass} onKeyDown={handleEnterKey}>
-              <option value="">Select gender</option>
-              <option>Male</option>
-              <option>Female</option>
-            </select>
-            {formik.touched.gender && formik.errors.gender && (
-              <div className="text-red-500 text-sm">{formik.errors.gender}</div>
-            )}
-          </div>
-
-          <div>
-            <select {...formik.getFieldProps('bloodGroup')} className={inputClass} onKeyDown={handleEnterKey}>
-              <option value="">Select blood group</option>
-              <option>A+</option><option>B+</option><option>O+</option><option>AB+</option>
-            </select>
-            {formik.touched.bloodGroup && formik.errors.bloodGroup && (
-              <div className="text-red-500 text-sm">{formik.errors.bloodGroup}</div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Academic Info */}
-      <div>
-        <h3 className="font-semibold mb-2">Academic Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-          <select {...formik.getFieldProps('grade')} className={inputClass} onKeyDown={handleEnterKey}>
-          <option value="">Select class</option>
-          <option value="Nursery">Nursery</option>
-          <option value="PP1">PP1</option>
-          <option value="PP2">PP2</option>
-              {['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'].map((roman, index) => (
-          <option key={index} value={roman}>{`Class ${roman}`}</option>
-              ))}
-          </select>
-
-            {formik.touched.grade && formik.errors.grade && (
-              <div className="text-red-500 text-sm">{formik.errors.grade}</div>
-            )}
-          </div>
-
-          <div>
-            <select {...formik.getFieldProps('section')} className={inputClass} onKeyDown={handleEnterKey}>
-              <option value="">Select section</option>
-              <option>A</option><option>B</option><option>C</option>
-            </select>
-            {formik.touched.section && formik.errors.section && (
-              <div className="text-red-500 text-sm">{formik.errors.section}</div>
-            )}
-          </div>
-
-          <div>
-            <select {...formik.getFieldProps('academicYear')} className={inputClass} onKeyDown={handleEnterKey}>
-              <option value="">Select academic year</option>
-              {['2024-2025', '2025-2026', '2026-2027', '2027-2028', '2028-2029'].map((year, index) => (
-                <option key={index} value={year}>{year}</option>
-              ))}
-            </select>
-            {formik.touched.academicYear && formik.errors.academicYear && (
-              <div className="text-red-500 text-sm">{formik.errors.academicYear}</div>
-            )}
-          </div>
-
-          <div>
-            <input type="text" placeholder="Admission Number" {...formik.getFieldProps('admissionNumber')} className={inputClass} onKeyDown={handleEnterKey} />
-            {formik.touched.admissionNumber && formik.errors.admissionNumber && (
-              <div className="text-red-500 text-sm">{formik.errors.admissionNumber}</div>
-            )}
-          </div>
-
-          <div>
-            <input type="text" placeholder="Roll number" {...formik.getFieldProps('rollNumber')} className={inputClass} onKeyDown={handleEnterKey} />
-            {formik.touched.rollNumber && formik.errors.rollNumber && (
-              <div className="text-red-500 text-sm">{formik.errors.rollNumber}</div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Contact Info */}
-      <div>
-        <h3 className="font-semibold mb-2">Contact Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <input type="text" placeholder="Parent/Guardian Name" {...formik.getFieldProps('parentName')} className={inputClass} onKeyDown={handleEnterKey} />
-            {formik.touched.parentName && formik.errors.parentName && (
-              <div className="text-red-500 text-sm">{formik.errors.parentName}</div>
-            )}
-          </div>
-
-          <div>
-            <select {...formik.getFieldProps('relationship')} className={inputClass} onKeyDown={handleEnterKey}>
-              <option value="">Select relationship</option><option>Father</option><option>Mother</option><option>Guardian</option>
-            </select>
-            {formik.touched.relationship && formik.errors.relationship && (
-              <div className="text-red-500 text-sm">{formik.errors.relationship}</div>
-            )}
-          </div>
-
-          <div>
-            <input type="text" placeholder="Phone number" {...formik.getFieldProps('phone')} className={inputClass} onKeyDown={handleEnterKey} />
-            {formik.touched.phone && formik.errors.phone && (
-              <div className="text-red-500 text-sm">{formik.errors.phone}</div>
-            )}
-          </div>
-
-          <div>
-            <input type="email" placeholder="Email address" {...formik.getFieldProps('email')} className={inputClass} onKeyDown={handleEnterKey} />
-            {formik.touched.email && formik.errors.email && (
-              <div className="text-red-500 text-sm">{formik.errors.email}</div>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <textarea placeholder="Address" {...formik.getFieldProps('address')} className={inputClass} rows="3" onKeyDown={handleEnterKey} />
-          {formik.touched.address && formik.errors.address && (
-            <div className="text-red-500 text-sm">{formik.errors.address}</div>
-          )}
-        </div>
-      </div>
-
-      {/* Documents */}
-      <div>
-        <h3 className="font-semibold mb-2">Documents & Photos</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label>Student Photo</label>
-            <input 
-              type="file" 
-              onChange={e => {
-                formik.setFieldValue('studentPhoto', e.currentTarget.files[0]);
-                setPhotoPreview(URL.createObjectURL(e.currentTarget.files[0]));
-              }} 
-              className={inputClass} 
-            />
-            {photoPreview && <img src={photoPreview} alt="Preview" className="mt-2 h-24 w-24 object-cover rounded-full" />}
-          </div>
-
-          <div>
-            <label>Birth Certificate</label>
-            <input type="file" onChange={e => formik.setFieldValue('birthCertificate', e.currentTarget.files[0])} className={inputClass} />
-          </div>
-
-          <div>
-            <label>Previous Marksheet</label>
-            <input type="file" onChange={e => formik.setFieldValue('previousMarksheet', e.currentTarget.files[0])} className={inputClass} />
-          </div>
-
-          <div>
-            <label>Transfer Certificate</label>
-            <input type="file" onChange={e => formik.setFieldValue('transferCertificate', e.currentTarget.files[0])} className={inputClass} />
-          </div>
-        </div>
-      </div>
-
-      {/* Submit Button */}
-      <div className="flex justify-end">
+    <div className="p-4">
+      {/* Search Section */}
+      <div className="bg-white p-4 rounded shadow-md mb-4 flex flex-wrap items-center gap-4">
+        <label className="font-semibold">Search By:</label>
+        <label className="flex items-center gap-1">
+          <input
+            type="radio"
+            value="admissionNo"
+            checked={searchType === 'admissionNo'}
+            onChange={() => handleSearchTypeChange('admissionNo')}
+          />
+          Admission No
+        </label>
+        <label className="flex items-center gap-1">
+          <input
+            type="radio"
+            value="name"
+            checked={searchType === 'name'}
+            onChange={() => handleSearchTypeChange('name')}
+          />
+          Name
+        </label>
+        <input
+          type="text"
+          placeholder="Enter Admission No or Student Name..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="flex-grow min-w-[200px] px-3 py-2 border rounded"
+        />
         <button
-          type="submit"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
+          onClick={handleSearch}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          Register Student
+          Find
+        </button>
+        <button
+          onClick={handleGetAll}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Get All Students
         </button>
       </div>
-    </form>
+
+      {/* Alert if no student found */}
+      {notFound && (
+        <div className="text-red-600 font-semibold mb-4">
+          No student found with given{' '}
+          {searchType === 'admissionNo' ? 'Admission Number' : 'Name'}.
+        </div>
+      )}
+
+      {/* Student Table */}
+      {showTable && (
+        <div className="overflow-x-auto">
+          <table className="min-w-[1400px] w-full border-separate border-spacing-y-2 text-sm text-left">
+            <thead>
+              <tr className="bg-gray-200 uppercase text-xs text-gray-700">
+                {[
+                  'Photo',
+                  'Name',
+                  'DOB',
+                  'Gender',
+                  'Blood Group',
+                  'Class',
+                  'Section',
+                  'Academic Year',
+                  'Admission No',
+                  'Roll No',
+                  'Total Fees',
+                  'Parent',
+                  'Relation',
+                  'Phone',
+                  'Email',
+                  'Address',
+                  'Birth Certificate',
+                  'Previous Marksheet',
+                  'Transfer Certificate'
+                ].map((header) => (
+                  <th
+                    key={header}
+                    className="px-4 py-2 font-bold border-b whitespace-nowrap"
+                  >
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {students.map((student) => (
+                <tr key={student._id} className="bg-white shadow-sm">
+                  <td className="px-4 py-2">{renderPhoto(student.studentPhoto)}</td>
+                  <td className="px-4 py-2">
+                    {[student.firstName, student.middleName, student.lastName]
+                      .filter(Boolean)
+                      .join(' ')}
+                  </td>
+                  <td className="px-4 py-2">{formatDate(student.dateOfBirth)}</td>
+                  <td className="px-4 py-2">{student.gender || 'N/A'}</td>
+                  <td className="px-4 py-2">{student.bloodGroup || 'N/A'}</td>
+                  <td className="px-4 py-2">{student.grade || 'N/A'}</td>
+                  <td className="px-4 py-2">{student.section || 'N/A'}</td>
+                  <td className="px-4 py-2">{student.academicYear || 'N/A'}</td>
+                  <td className="px-4 py-2">{student.admissionNumber || 'N/A'}</td>
+                  <td className="px-4 py-2">{student.rollNumber || 'N/A'}</td>
+                  <td className="px-4 py-2">{student.totalFees || 'N/A'}</td>
+                  <td className="px-4 py-2">{student.parentName || 'N/A'}</td>
+                  <td className="px-4 py-2">{student.relationship || 'N/A'}</td>
+                  <td className="px-4 py-2">{student.phoneNumber || 'N/A'}</td>
+                  <td className="px-4 py-2">{student.emailAddress || 'N/A'}</td>
+                  <td className="px-4 py-2">{student.address || 'N/A'}</td>
+                  <td className="px-4 py-2">
+                    {renderDocument(student.birthCertificate)}
+                  </td>
+                  <td className="px-4 py-2">
+                    {renderDocument(student.previousMarksheet)}
+                  </td>
+                  <td className="px-4 py-2">
+                    {renderDocument(student.transferCertificate)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Download Excel Button */}
+          <div className="mt-4">
+            <button
+              onClick={downloadExcel}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-transform duration-100 ease-in-out"
+            >
+              Download as Excel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
-export default StudentRegistrationForm;
+export default DisplayStudentInfo;

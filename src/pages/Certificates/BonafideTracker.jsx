@@ -7,7 +7,6 @@ const BonafideTracker = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
@@ -98,9 +97,15 @@ const BonafideTracker = () => {
 
   const handleDownloadAllPDF = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/bonafide/download/all', {
-        method: 'GET',
-      });
+      // Show loading indication
+      setLoading(true);
+      
+      // Include search query if one exists
+      const endpoint = searchQuery 
+        ? `http://localhost:5000/api/bonafide/download/all?search=${encodeURIComponent(searchQuery)}`
+        : 'http://localhost:5000/api/bonafide/download/all';
+      
+      const response = await fetch(endpoint);
 
       if (!response.ok) {
         throw new Error(`Download failed with status ${response.status}`);
@@ -110,12 +115,16 @@ const BonafideTracker = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'bonafide_certificates_all.pdf';
+      a.download = 'all_bonafide_certificates.pdf';
       a.click();
       window.URL.revokeObjectURL(url);
+      
+      // Hide loading indication
+      setLoading(false);
     } catch (error) {
       console.error('Download all failed:', error);
       alert('Failed to download all certificates: ' + error.message);
+      setLoading(false);
     }
   };
 
@@ -147,9 +156,10 @@ const BonafideTracker = () => {
         />
         <button
           onClick={handleDownloadAllPDF}
-          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+          className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 h-10"
+          disabled={loading || certificates.length === 0}
         >
-          Download All as PDF
+          {loading ? 'Processing...' : 'Download All as PDF'}
         </button>
       </div>
 

@@ -13,11 +13,7 @@ const EnquiryForm = () => {
   });
 
   const [errors, setErrors] = useState({});
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [showDownloadSection, setShowDownloadSection] = useState(false);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-
+  const [isSubmitted, setIsSubmitted] = useState(false);  
   const handleChange = (e) => {
     const { id, value } = e.target;
     setFormData({ ...formData, [id]: value });
@@ -79,75 +75,16 @@ const EnquiryForm = () => {
       }
     }
   };
-
-  const handleDownload = async () => {
-  if (!startDate || !endDate) {
-    alert('Please select both start and end dates.');
-    return;
-  }
-
-  try {
-    const response = await fetch(`http://localhost:5000/api/enquiry/history?start=${startDate}&end=${endDate}`);
-    if (!response.ok) {
-      const errData = await response.json();
-      throw new Error(errData.error || 'Download failed');
-    }
-
-    const blob = await response.blob(); // ✅ get raw CSV
-    const url = window.URL.createObjectURL(new Blob([blob]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `enquiry-history-${startDate}-to-${endDate}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } catch (err) {
-    console.error('Download failed', err);
-    alert('Failed to download data.');
-  }
-};
-
+  
   return (
     <div className="max-w-lg mx-auto">
       {/* Header and download button */}
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl text-blue-600 font-bold">Student Enquiry Form</h1>
-        <button
-          className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 text-sm"
-          onClick={() => setShowDownloadSection(!showDownloadSection)}
-        >
-          {showDownloadSection ? 'Hide Download Section' : 'Download Enquiry History'}
-        </button>
+       
       </div>
 
-      {/* Download section */}
-      {showDownloadSection && (
-        <div className="bg-gray-100 p-4 rounded-md mb-6">
-          <h2 className="text-lg font-semibold mb-2">Download Enquiry History</h2>
-          <div className="flex gap-4 mb-2">
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="border p-2 rounded w-full"
-            />
-            <input
-              type="date"
-                          value={endDate}
-                          max={new Date().toISOString().split('T')[0]}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="border p-2 rounded w-full"
-            />
-          </div>
-          <button
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            onClick={handleDownload}
-          >
-            Download Excel
-          </button>
-        </div>
-      )}
-
+      
       {/* Form success message */}
       {isSubmitted && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">

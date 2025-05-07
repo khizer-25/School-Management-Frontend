@@ -1,12 +1,14 @@
 import React, { useState, useContext } from 'react';
 import NewRegistration from '../Registration/NewRegistration';
-import EnquiryForm from '../Enquiry/EnquiryForm';
+// import EnquiryForm from '../Enquiry/EnquiryForm';
 import BonafideMainPage from '../Certificates/BonafideMainPage';
 import StudentMainPage from '../Students/StudentMainPage';
 import Communication from '../Communication/Communication';
 import FeesMainPage from '../Fees/FeesMainPage';
 import { AuthContext } from '../../context/AuthContext'; 
 import logo from "../../assets/schlogo.png";
+import Enquirymain from '../Enquiry/Enquirymain';
+import NewRegistrationMainPage from '../Registration/NewRegistrationMain';
 
 const Icons = {
     Dashboard: () => <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z"></path></svg>,
@@ -21,10 +23,16 @@ const Icons = {
     Notification: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>,
 };
 
-const DashboardHome = ({ onLogout }) => {
+const DashboardHome = () => {
+    const { logout } = useContext(AuthContext); // Get logout function from context
     const [currentTab, setCurrentTab] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { currentUser } = useContext(AuthContext); // Get user from context
+
+    const handleLogout = async () => {
+        await logout();
+        navigate('/');
+    };
 
     const navItems = [
         { id: 'dashboard', name: 'Dashboard', icon: Icons.Dashboard },
@@ -84,8 +92,8 @@ const DashboardHome = ({ onLogout }) => {
                         </div>
                         <br></br>
                         <button
-                            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-100 text-lg font-semibold"
-                            onClick={onLogout}
+                            className="group relative px-6 py-3 bg-gradient-to-r from-white-600 to-blue-300 text-black rounded-full overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 "
+                            onClick={handleLogout}
                         >
                             Logout
                         </button>
@@ -158,8 +166,8 @@ const DashboardHome = ({ onLogout }) => {
 
                     <div className="p-1">
                         {/* Content for different tabs */}
-                        {currentTab === 'enquiry' && <EnquiryForm />}
-                        {currentTab === 'registration' && <NewRegistration />}
+                        {currentTab === 'enquiry' && <Enquirymain />}
+                        {currentTab === 'registration' && <NewRegistrationMainPage />}
                         {currentTab === 'student' && <StudentMainPage />}
                         {currentTab === 'bonafide' && <BonafideMainPage />}
                         {currentTab === 'communication' && <Communication />}

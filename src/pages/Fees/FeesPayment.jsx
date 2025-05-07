@@ -101,8 +101,8 @@ export default function FeesPaymentForm() {
   <div className="flex flex-col sm:flex-row sm:items-end gap-4">
     {/* Radio options section */}
     <div className="flex flex-col">
-      <label className="font-medium text-xl mr-4">Search By</label><br></br>
-      <div className="flex items-center gap-6 text-lg">
+      <label className="font-medium text-xl mr-4 ">Search By</label><br></br>
+      <div className="flex items-center gap-6 p-1 text-lg">
         <label className="flex items-center gap-2">
           <input
             type="radio"
@@ -112,7 +112,7 @@ export default function FeesPaymentForm() {
             onChange={() => setSearchBy("admission")}
           /> Admission No
         </label>
-        <label>
+        <label className="flex items-center gap-2">
           <input
             type="radio"
             name="searchBy"
