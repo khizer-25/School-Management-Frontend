@@ -1,4 +1,7 @@
-import React, { useState, useContext } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
+import axios from 'axios';
+import { IndianRupee } from 'lucide-react';
+import { ScrollText } from 'lucide-react';
 import NewRegistration from '../Registration/NewRegistration';
 // import EnquiryForm from '../Enquiry/EnquiryForm';
 import BonafideMainPage from '../Certificates/BonafideMainPage';
@@ -9,6 +12,9 @@ import { AuthContext } from '../../context/AuthContext';
 import logo from "../../assets/schlogo.png";
 import Enquirymain from '../Enquiry/Enquirymain';
 import NewRegistrationMainPage from '../Registration/NewRegistrationMain';
+import CircularCalendar from '../../components/CircularCalendar';
+ // Adjust path if needed
+
 
 const Icons = {
     Dashboard: () => <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z"></path></svg>,
@@ -28,6 +34,27 @@ const DashboardHome = () => {
     const [currentTab, setCurrentTab] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { currentUser } = useContext(AuthContext); // Get user from context
+
+    const [stats, setStats] = useState({
+        totalStudents: 0,
+        totalFeeCollection: 0,
+        totalEnquiries: 0,
+        certificatesGenerated: 0,
+      });
+      
+      useEffect(() => {
+        const fetchStats = async () => {
+          try {
+            const { data } = await axios.get('http://localhost:5000/api/dashboard/stats');
+            setStats(data);
+          } catch (error) {
+            console.error('Error fetching dashboard stats:', error);
+          }
+        };
+      
+        fetchStats();
+      }, []);
+      
 
     const handleLogout = async () => {
         await logout();
@@ -52,6 +79,8 @@ const DashboardHome = () => {
     const toggleSidebar = () => {
         setSidebarOpen(!sidebarOpen);
     };
+
+    
 
     return (
         <div className="h-screen flex flex-col">
@@ -176,66 +205,78 @@ const DashboardHome = () => {
                         {/* Enhanced Dashboard content from paste.txt */}
                         {currentTab === 'dashboard' && (
                             <>
-                                {/* Stats Overview */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                                    <div className="bg-white rounded-lg shadow-md p-6 border-t-4 border-blue-500 hover:shadow-lg transition-shadow duration-300">
-                                        <div className="flex items-center">
-                                            <div className="p-3 rounded-full bg-blue-100 text-blue-500 mr-4">
-                                                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p className="text-gray-500 text-sm">Total Students</p>
-                                                <p className="text-2xl font-semibold text-gray-800">2,547</p>
-                                            </div>
-                                        </div>
-                                    </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 min-h-28">
 
-                                    <div className="bg-white rounded-lg shadow-md p-6 border-t-4 border-green-500 hover:shadow-lg transition-shadow duration-300">
-                                        <div className="flex items-center">
-                                            <div className="p-3 rounded-full bg-green-100 text-green-500 mr-4">
-                                                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"></path>
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p className="text-gray-500 text-sm">Fee Collection</p>
-                                                <p className="text-2xl font-semibold text-gray-800">₹4.2M</p>
-                                            </div>
-                                        </div>
-                                    </div>
+{/* Total Students */}
+<div className="bg-white rounded-lg shadow-md p-6 border-t-4 border-blue-500 hover:shadow-lg transition-shadow duration-100">
+  <div className="flex items-center">
+    <div className="p-3 rounded-full bg-blue-100 text-blue-500 mr-4">
+    <Icons.Student />
+      {/* <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-5-4M9 20h6M4 20h5v-2a4 4 0 00-5-4M16 7a4 4 0 01-8 0 4 4 0 018 0z" />
+      </svg> */}
+    </div>
+    <div>
+      <p className="text-gray-700 text-lg font-semibold mb-1">Total Students</p>
+      <p className="text-2xl font-semibold text-gray-800 mb-2">{stats.totalStudents}</p>
+    </div>
+  </div>
+</div>
 
-                                    <div className="bg-white rounded-lg shadow-md p-6 border-t-4 border-yellow-500 hover:shadow-lg transition-shadow duration-300">
-                                        <div className="flex items-center">
-                                            <div className="p-3 rounded-full bg-yellow-100 text-yellow-500 mr-4">
-                                                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path>
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p className="text-gray-500 text-sm">Enquiries</p>
-                                                <p className="text-2xl font-semibold text-gray-800">15</p>
-                                            </div>
-                                        </div>
-                                    </div>
+{/* Fee Collection */}
+<div className="bg-white rounded-lg shadow-md p-6 border-t-4 border-green-500 hover:shadow-lg transition-shadow duration-100">
+  <div className="flex items-center">
+    <div className="p-3 rounded-full bg-green-100 text-green-500 mr-4">
+    <IndianRupee className="text-green-500" />
+      {/* <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+  <path d="M6 3h12v2H6v2h12v2H6v2h8a4 4 0 0 1-4 4h-4v2h4a6 6 0 0 0 6-6H6z"/>
+</svg> */}
 
-                                    <div className="bg-white rounded-lg shadow-md p-6 border-t-4 border-purple-500 hover:shadow-lg transition-shadow duration-300">
-                                        <div className="flex items-center">
-                                            <div className="p-3 rounded-full bg-purple-100 text-purple-500 mr-4">
-                                                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p className="text-gray-500 text-sm">Certificates Generated</p>
-                                                <p className="text-2xl font-semibold text-gray-800">25</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+    </div>
+    <div>
+      <p className="text-gray-700 text-lg font-semibold mb-1">Fee Collection</p>
+      <p className="text-2xl font-semibold text-gray-800 mb-2">
+        ₹{stats.totalFeeCollection.toLocaleString()}
+      </p>
+    </div>
+  </div>
+</div>
 
-                                {/* Recent Activities & Charts */}
+{/* Enquiries */}
+<div className="bg-white rounded-lg shadow-md p-6 border-t-4 border-yellow-500 hover:shadow-lg transition-shadow duration-100">
+  <div className="flex items-center">
+    <div className="p-3 rounded-full bg-yellow-100 text-yellow-500 mr-4">
+      {/* Phone/Enquiry Icon */}
+      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+  <path d="M2 3v18l4-4h14a2 2 0 0 0 2-2V3H2zm11 10h-2v-2h2v2zm0-4h-2V7h2v2z"/>
+</svg>
+
+    </div>
+    <div>
+      <p className="text-gray-700 text-lg font-semibold mb-1">Enquiries</p>
+      <p className="text-2xl font-semibold text-gray-800 mb-2">{stats.totalEnquiries}</p>
+    </div>
+  </div>
+</div>
+
+{/* Certificates Generated */}
+<div className="bg-white rounded-lg shadow-md p-6 border-t-4 border-purple-500 hover:shadow-lg transition-shadow duration-100">
+  <div className="flex items-center">
+    <div className="p-3 rounded-full bg-purple-100 text-purple-500 mr-4">
+      {/* Award/Certificate Icon */}
+      <ScrollText className="text-purple-500 w-6 h-6" />
+
+    </div>
+    <div>
+      <p className="text-gray-700 text-lg font-semibold mb-1">Certificates Generated</p>
+      <p className="text-2xl font-semibold text-gray-800 mb-2">{stats.certificatesGenerated}</p>
+    </div>
+  </div>
+</div>
+
+</div>
+{/* <Calendar/> */}
+                          {/* Recent Activities & Charts */}
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                     <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
                                         <div className="flex items-center justify-between mb-4">
@@ -291,21 +332,8 @@ const DashboardHome = () => {
                                     </div>
 
                                     <div className="bg-white rounded-lg shadow-md p-6">
-                                        <h3 className="text-xl font-semibold mb-4 text-gray-800">Upcoming Events</h3>
-                                        <div className="space-y-4">
-                                            <div className="border-l-4 border-blue-500 pl-3">
-                                                <p className="font-medium">Teachers Meeting</p>
-                                                <p className="text-sm text-gray-500">Today, 2:00 PM</p>
-                                            </div>
-                                            <div className="border-l-4 border-green-500 pl-3">
-                                                <p className="font-medium">Parent-Teacher Conference</p>
-                                                <p className="text-sm text-gray-500">Tomorrow, 10:00 AM</p>
-                                            </div>
-                                            <div className="border-l-4 border-purple-500 pl-3">
-                                                <p className="font-medium">Annual Sports Day</p>
-                                                <p className="text-sm text-gray-500">May 5, 8:00 AM</p>
-                                            </div>
-                                        </div>
+                                        
+                                        <CircularCalendar/>
                                     </div>
                                 </div>
                             </>

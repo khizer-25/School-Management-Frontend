@@ -25,7 +25,7 @@ const StudentRegistrationForm = () => {
       dateOfBirth: '', gender: '', bloodGroup: '',
       grade: '', section: '', academicYear: '', rollNumber: '', admissionNumber: '', totalFees: '',
       parentName: '', relationship: '', phoneNumber: '', emailAddress: '', address: '',
-      studentPhoto: null, birthCertificate: null, previousMarksheet: null, transferCertificate: null,
+      studentPhoto: '', birthCertificate: '', previousMarksheet: '', transferCertificate: '',
     },
     validationSchema: Yup.object({
       firstName: Yup.string().required('First name is required'),
@@ -93,9 +93,9 @@ const StudentRegistrationForm = () => {
           <input type="text" placeholder="First name" {...formik.getFieldProps('firstName')} className={inputClass} />
           {formik.touched.firstName && formik.errors.firstName && <div className="text-red-500 text-sm">{formik.errors.firstName}</div>}
         </div>
-        <div><input type="text" placeholder="Middle name" {...formik.getFieldProps('middleName')} className={inputClass} /></div>
+        <div><input type="text" placeholder="Middle name (optional)" {...formik.getFieldProps('middleName')} className={inputClass} /></div>
         <div>
-          <input type="text" placeholder="Last name (optional)" {...formik.getFieldProps('lastName')} className={inputClass} />
+          <input type="text" placeholder="Last name" {...formik.getFieldProps('lastName')} className={inputClass} />
           {formik.touched.lastName && formik.errors.lastName && <div className="text-red-500 text-sm">{formik.errors.lastName}</div>}
         </div>
         <div>

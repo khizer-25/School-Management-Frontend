@@ -10,45 +10,82 @@ const FeesBalanceReport = () => {
   const [loading, setLoading] = useState(false);
   const [academicYear, setAcademicYear] = useState("2024-2025");
   const [defaultersData, setDefaultersData] = useState([]);
+  const [lastFailedSearchTerm, setLastFailedSearchTerm] = useState("");
 
-  // Function to handle searching individual student by admission or name
   const handleSearch = async () => {
-    if (searchTerm.trim() === "") {
-      setSearchError("Please enter a valid search term");
-      return;
-    }
+  if (searchTerm.trim() === "") {
+    setSearchError("Please enter a valid search term");
+    return;
+  }
 
-    setLoading(true);
-    setSearchError("");
-    setStudentFound(null);
-    setStudentData(null);
-    setDefaultersData([]);
+  setLoading(true);
+  setSearchError("");
+  setStudentFound(null);
+  setStudentData(null);
+  setDefaultersData([]);
 
-    try {
-      const response = await axios.get('http://localhost:5000/api/students/search', {
+  try {
+    // 🔍 1️⃣ Fetch student data first
+    const studentResponse = await axios.get('http://localhost:5000/api/students/search', {
+      params: {
+        admissionNumber: searchBy === "admission" ? searchTerm.trim() : undefined,
+        studentName: searchBy === "name" ? searchTerm.trim() : undefined,
+        academicYear,
+      }
+    });
+
+    console.log("Search Response:", studentResponse.data); // ✅ Debugging
+
+    if (studentResponse.data.success && studentResponse.data.student) {
+      const student = studentResponse.data.student;
+
+      // 🔍 2️⃣ Now fetch payment data using the admission number
+      const paymentResponse = await axios.get('http://localhost:5000/api/fees', {
         params: {
-          admissionNumber: searchBy === "admission" ? searchTerm.trim() : undefined,
-          studentName: searchBy === "name" ? searchTerm.trim() : undefined,
-          academicYear,
+          admissionNumber: student.admissionNumber,
         }
       });
 
-      if (response.data.success) {
-        setStudentData(response.data.student);
-        setStudentFound(true);
-      } else {
-        setStudentFound(false);
-      }
-    } catch (error) {
-      console.error(error);
-      setSearchError("Error occurred while searching for student.");
-      setStudentFound(false);
-    } finally {
-      setLoading(false);
-    }
-  };
+      console.log("Payment Response:", paymentResponse.data); // ✅ Debugging
 
-  // Function to fetch all defaulters
+      // ✅ Calculate total paid amount
+      let totalPaidAmount = 0;
+      if (Array.isArray(paymentResponse.data.payments)) {
+        totalPaidAmount = paymentResponse.data.payments.reduce((sum, payment) => sum + payment.amount, 0);
+      }
+
+      // ✅ Calculate balance (if student.totalFees is available)
+      const totalFees = student.totalFees || 0;
+      const balance = totalFees - totalPaidAmount;
+
+      // ✅ Combine everything into student data
+      const enrichedStudentData = {
+        ...student,
+        paidAmount: totalPaidAmount,
+        balance,
+      };
+
+      console.log("Enriched Student Data:", enrichedStudentData); // 👀 Debug
+
+      setStudentData(enrichedStudentData);
+      setStudentFound(true);
+      setLastFailedSearchTerm("");
+    } else {
+      setStudentFound(false);
+      setLastFailedSearchTerm(searchTerm);
+    }
+  } catch (error) {
+    console.error("Search failed:", error);
+    setSearchError("Student not found");
+    setStudentFound(false);
+    setLastFailedSearchTerm(searchTerm); // Set failed term
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  
   const handleFetchDefaulters = async () => {
     setLoading(true);
     try {
@@ -63,8 +100,10 @@ const FeesBalanceReport = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-blue-600 mb-6">Fee Balance Report</h2>
+
+      <div className="bg-white shadow-md rounded-lg p-4 mb-8">
+      <div className="flex justify-between items-center mb-3">
+        <h2 className="text-2xl font-bold text-blue-600 mb-6 ">Fee Balance Report</h2>
         <select
           value={academicYear}
           onChange={(e) => setAcademicYear(e.target.value)}
@@ -75,8 +114,6 @@ const FeesBalanceReport = () => {
           ))}
         </select>
       </div>
-
-      <div className="bg-white shadow-md rounded-lg p-4 mb-8">
         <div className="flex flex-wrap items-center gap-4">
           <div>
             <label className="font-medium text-xl mr-4">Search By:</label>
@@ -172,11 +209,12 @@ const FeesBalanceReport = () => {
 
 
 
-      {studentFound === false && searchTerm && !loading && (
-        <div className="bg-white shadow-md rounded-lg p-4 text-center text-gray-500">
-          No student found for "{searchTerm}"
-        </div>
-      )}
+{studentFound === false && lastFailedSearchTerm && !loading && (
+  <div className="bg-white shadow-md rounded-lg p-4 text-center text-gray-500">
+    No student found for "{lastFailedSearchTerm}"
+  </div>
+)}
+
 
       {/* Defaulters' Data Table */}
       {defaultersData.length > 0 && (

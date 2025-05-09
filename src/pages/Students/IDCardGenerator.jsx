@@ -64,12 +64,18 @@ function IDCardGenerator() {
       const studentData = data.students[0];
 
       setStudent({
-        name: `${studentData.firstName} ${studentData.middleName || ""} ${studentData.lastName}`.trim(),
+        name: `${studentData.firstName} ${studentData.middleName ? " " + studentData.middleName : ""} ${studentData.lastName}`.trim(),
         fatherName: studentData.parentName,
         studentClass: `${studentData.grade} - ${studentData.section}`,
         rollNo: studentData.rollNumber,
         gender: studentData.gender,
-        dob: studentData.dateOfBirth,
+        dob: studentData.dateOfBirth
+  ? new Date(studentData.dateOfBirth)
+      .toLocaleDateString("en-GB")
+      .replace(/\//g, "-")  // replace slashes with dashes
+  : "",
+
+
         address: studentData.address,
         phone: studentData.phoneNumber,
         photo: studentData.studentPhoto
@@ -107,9 +113,11 @@ function IDCardGenerator() {
           }
         `}
       </style>
-
+      
       {/* Search Form */}
-      <div className="bg-white  p-4 rounded shadow mb-6 flex items-center gap-4 flex-wrap w-full"> 
+      <div className="bg-white p-4 rounded shadow mb-6 w-full"> 
+      <h2 className="text-2xl font-bold text-blue-600 mb-4">Identity Card Generator</h2>
+      <div className="flex flex-wrap items-center gap-4">
         <label className="font-semibold text-lg">Generate By</label>
         <label>
           <input
@@ -149,7 +157,7 @@ function IDCardGenerator() {
         >
           Generate
         </button>
-      </div>
+      </div></div>
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* Form Section */}

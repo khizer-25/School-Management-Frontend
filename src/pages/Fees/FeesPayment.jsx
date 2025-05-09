@@ -20,17 +20,17 @@ export default function FeesPaymentForm() {
 
   const handleFind = async () => {
     setSearchError(""); // clear previous error
-
+  
     if (searchInput.trim() === "") {
       setSearchError(
         searchBy === "admission"
           ? "Please enter an admission number"
           : "Please enter a student name"
       );
-      setStudentFound(null); // Reset studentFound state when search input is empty
+      setStudentFound(null);
       return;
     }
-
+  
     try {
       const response = await axios.get('http://localhost:5000/api/students/search', {
         params: {
@@ -38,21 +38,30 @@ export default function FeesPaymentForm() {
           studentName: searchBy === "student" ? searchInput.trim() : undefined
         }
       });
-
-      if (response.data && response.data.student) {
-        const { firstName,middleName,lastName, admissionNumber } = response.data.student;
+  
+      // Adjust depending on whether your backend returns an array or single object
+      const student = Array.isArray(response.data.students)
+        ? response.data.students[0]
+        : response.data.student;
+  
+      if (student) {
+        const { firstName, middleName, lastName, admissionNumber } = student;
+        const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
+  
         setStudentDetails({
-          fullName: `${firstName} ${middleName}  ${lastName}`,
+          fullName,
           admissionNumber,
         });
-        setStudentFound(true); // Set to true if student is found
+        setStudentFound(true);
       } else {
-        setStudentFound(false); // Set to false if student is not found
+        setStudentFound(false);
       }
     } catch (error) {
-      setStudentFound(false); // Handle error and set studentFound to false
+      console.error("Search error:", error);
+      setStudentFound(false);
     }
   };
+  
 
   const formik = useFormik({
     initialValues: {
